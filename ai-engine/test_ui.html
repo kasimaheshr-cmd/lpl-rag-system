@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LPL Compliance AI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#0f1117;--ink2:#3d3f4a;--ink3:#8a8d9a;
+  --paper:#f7f6f2;--surface:#ffffff;--accent:#1a4d3a;
+  --accent2:#2d7a5a;--accent-light:#e8f3ee;
+  --warn:#8b4000;--warn-light:#fdf3e8;
+  --border:#e2e0d8;--mono:#DM Mono,monospace;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;}
+header{border-bottom:1px solid var(--border);padding:0 40px;height:56px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
+.logo{font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent);letter-spacing:-0.3px;}
+.logo span{color:var(--ink3);font-style:italic;font-size:14px;margin-left:8px;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#2d7a5a;display:inline-block;margin-right:6px;animation:pulse 2.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status{font-size:12px;color:var(--ink3);display:flex;align-items:center;}
+main{flex:1;display:grid;grid-template-columns:280px 1fr;max-width:1100px;margin:0 auto;width:100%;gap:0;padding:32px 40px;}
+.sidebar{padding-right:32px;border-right:1px solid var(--border);}
+.sidebar h3{font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;}
+.suggested-btn{display:block;width:100%;text-align:left;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px;color:var(--ink2);cursor:pointer;margin-bottom:8px;transition:all 0.15s;line-height:1.4;font-family:'DM Sans',sans-serif;}
+.suggested-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+.doc-badge{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:var(--ink3);border-bottom:1px solid var(--border);}
+.doc-badge:last-child{border-bottom:none;}
+.doc-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);flex-shrink:0;}
+.chat-area{padding-left:32px;display:flex;flex-direction:column;height:calc(100vh - 120px);}
+.messages{flex:1;overflow-y:auto;padding-bottom:24px;scroll-behavior:smooth;}
+.message{margin-bottom:24px;animation:fadeUp 0.25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-user{display:flex;justify-content:flex-end;}
+.msg-user .bubble{background:var(--accent);color:white;padding:12px 18px;border-radius:16px 16px 4px 16px;max-width:65%;font-size:14px;line-height:1.6;}
+.msg-ai{display:flex;gap:12px;align-items:flex-start;}
+.ai-avatar{width:32px;height:32px;border-radius:8px;background:var(--accent-light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Serif Display',serif;font-size:13px;color:var(--accent);}
+.ai-content{flex:1;}
+.ai-bubble{background:var(--surface);border:1px solid var(--border);padding:16px 20px;border-radius:4px 16px 16px 16px;font-size:14px;line-height:1.75;color:var(--ink);max-width:90%;}
+.ai-bubble.streaming::after{content:'▌';animation:blink 0.7s step-end infinite;color:var(--accent);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.sources-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.source-tag{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--accent-light);color:var(--accent);border:1px solid #c5ddd3;font-family:'DM Mono',monospace;}
+.input-bar{border-top:1px solid var(--border);padding-top:20px;display:flex;gap:10px;align-items:flex-end;}
+textarea{flex:1;padding:12px 16px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;resize:none;height:48px;line-height:1.5;color:var(--ink);background:var(--surface);transition:border-color 0.15s;outline:none;}
+textarea:focus{border-color:var(--accent);}
+.send-btn{width:48px;height:48px;border-radius:10px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+.send-btn:hover{background:var(--accent2);}
+.send-btn:active{transform:scale(0.96);}
+.send-btn svg{width:18px;height:18px;fill:white;}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.session-tag{font-size:11px;color:var(--ink3);margin-top:6px;font-family:'DM Mono',monospace;}
+.thinking{display:flex;gap:4px;padding:16px 20px;align-items:center;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ink3);animation:bounce 1.2s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:0.2s;}
+.dot:nth-child(3){animation-delay:0.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.welcome{text-align:center;padding:60px 20px;color:var(--ink3);}
+.welcome h2{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-bottom:8px;}
+.welcome p{font-size:14px;line-height:1.7;max-width:360px;margin:0 auto;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">LPL Compliance AI <span>— powered by local RAG</span></div>
+  <div class="status"><span class="status-dot"></span>Connected · llama3.2 · ChromaDB</div>
+</header>
+<main>
+  <aside class="sidebar">
+    <h3>Try asking</h3>
+    <button class="suggested-btn" onclick="setQ(this)">What is the deadline for annual compliance training?</button>
+    <button class="suggested-btn" onclick="setQ(this)">What happens if an advisor misses compliance training?</button>
+    <button class="suggested-btn" onclick="setQ(this)">How long must client correspondence be retained per FINRA?</button>
+    <button class="suggested-btn" onclick="setQ(this)">What are the rules for variable annuity exchanges?</button>
+    <button class="suggested-btn" onclick="setQ(this)">How should client complaints be handled?</button>
+    <hr class="divider">
+    <h3 style="margin-bottom:10px;">Knowledge base</h3>
+    <div class="doc-badge"><span class="doc-dot"></span>compliance-policy-2024</div>
+    <div class="doc-badge"><span class="doc-dot"></span>advisor-handbook-ch3</div>
+    <div class="doc-badge"><span class="doc-dot"></span>operations-manual</div>
+    <div class="doc-badge"><span class="doc-dot"></span>test-financial-policy</div>
+    <div class="doc-badge"><span class="doc-dot"></span>suitability-policy</div>
+    <div class="doc-badge"><span class="doc-dot"></span>complaints-procedure</div>
+    <div class="doc-badge"><span class="doc-dot"></span>annuity-exchange-policy</div>
+  </aside>
+  <section class="chat-area">
+    <div class="messages" id="messages">
+      <div class="welcome">
+        <h2>Ask anything about LPL policies</h2>
+        <p>Answers are grounded in your compliance documents. Every response cites its source.</p>
+      </div>
+    </div>
+    <div class="input-bar">
+      <textarea id="q" placeholder="Ask a compliance question..." onkeydown="handleKey(event)" rows="1"></textarea>
+      <button class="send-btn" id="send-btn" onclick="ask()">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+    <div class="session-tag" id="session-tag"></div>
+  </section>
+</main>
+<script>
+let sessionId="";
+let busy=false;
+
+function setQ(btn){
+  document.getElementById("q").value=btn.textContent.trim();
+  document.getElementById("q").focus();
+}
+
+function handleKey(e){
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ask();}
+}
+
+function addUserMsg(text){
+  const m=document.getElementById("messages");
+  const welcome=m.querySelector(".welcome");
+  if(welcome)welcome.remove();
+  const d=document.createElement("div");
+  d.className="message msg-user";
+  d.innerHTML=`<div class="bubble">${text}</div>`;
+  m.appendChild(d);
+  m.scrollTop=m.scrollHeight;
+}
+
+function addThinking(){
+  const m=document.getElementById("messages");
+  const d=document.createElement("div");
+  d.className="message msg-ai";d.id="thinking";
+  d.innerHTML=`<div class="ai-avatar">AI</div><div class="ai-bubble"><div class="thinking"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  m.appendChild(d);m.scrollTop=m.scrollHeight;
+  return d;
+}
+
+function replaceThinking(text,sources){
+  const t=document.getElementById("thinking");
+  if(!t)return null;
+  t.innerHTML=`<div class="ai-avatar">AI</div><div class="ai-content"><div class="ai-bubble streaming" id="ai-bubble">${text}</div><div class="sources-row" id="sources-row"></div></div>`;
+  if(sources&&sources.length){
+    const sr=document.getElementById("sources-row");
+    sources.forEach(s=>{const sp=document.createElement("span");sp.className="source-tag";sp.textContent=s;sr.appendChild(sp);});
+  }
+  return document.getElementById("ai-bubble");
+}
+
+async function ask(){
+  if(busy)return;
+  const q=document.getElementById("q").value.trim();
+  if(!q)return;
+  busy=true;
+  document.getElementById("send-btn").disabled=true;
+  document.getElementById("q").value="";
+
+  addUserMsg(q);
+  const thinkEl=addThinking();
+  let bubbleEl=null;
+  let buffer="";
+
+  try{
+    const res=await fetch("http://localhost:8001/ask/stream",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({question:q,department:"Compliance",session_id:sessionId})
+    });
+
+    const reader=res.body.getReader();
+    const dec=new TextDecoder();
+
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      const txt=dec.decode(value);
+      const lines=txt.split("\n");
+      for(const line of lines){
+        if(!line.startsWith("data: "))continue;
+        try{
+          const data=JSON.parse(line.slice(6));
+          if(!data.done){
+            buffer+=data.token;
+            if(!bubbleEl){bubbleEl=replaceThinking(buffer,null);}
+            else{bubbleEl.textContent=buffer;}
+            document.getElementById("messages").scrollTop=99999;
+          } else {
+            if(bubbleEl){
+              bubbleEl.classList.remove("streaming");
+              const sr=document.getElementById("sources-row");
+              if(sr&&data.sources&&data.sources.length){
+                sr.innerHTML="";
+                data.sources.forEach(s=>{const sp=document.createElement("span");sp.className="source-tag";sp.textContent=s;sr.appendChild(sp);});
+              }
+            }
+            if(data.session_id){
+              sessionId=data.session_id;
+              document.getElementById("session-tag").textContent="Session: "+sessionId;
+            }
+          }
+        }catch(e){}
+      }
+    }
+  }catch(err){
+    if(thinkEl&&thinkEl.parentNode)thinkEl.remove();
+    const m=document.getElementById("messages");
+    const d=document.createElement("div");
+    d.className="message msg-ai";
+    d.innerHTML=`<div class="ai-avatar">AI</div><div class="ai-content"><div class="ai-bubble" style="color:#8b4000">Could not connect to server. Make sure uvicorn is running on port 8001.</div></div>`;
+    m.appendChild(d);
+  }
+
+  busy=false;
+  document.getElementById("send-btn").disabled=false;
+  document.getElementById("q").focus();
+}
+</script>
+</body>
+</html>

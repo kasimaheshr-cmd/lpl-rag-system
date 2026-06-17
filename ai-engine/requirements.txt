@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+ollama
+chromadb
+pydantic
+pypdf
+rank-bm25

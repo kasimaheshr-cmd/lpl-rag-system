@@ -1,0 +1,6 @@
+@LPL.Gatekeeper_HostAddress = http://localhost:5258
+
+GET {{LPL.Gatekeeper_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
