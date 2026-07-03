@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using MongoDB.Bson;
 using LPL.Gatekeeper.Models;
 
 namespace LPL.Gatekeeper.Services;

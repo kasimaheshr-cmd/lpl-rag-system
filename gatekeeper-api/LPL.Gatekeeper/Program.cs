@@ -175,7 +175,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDbService>();
-await mongoDb.StartupCheckAsync();
 app.Logger.LogInformation("MongoDB startup check complete");
 
 var redis = app.Services.GetRequiredService<IRedisCacheService>(); // ← ADD

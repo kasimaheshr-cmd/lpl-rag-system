@@ -15,7 +15,7 @@ public class AuditController : ControllerBase
     private readonly ITokenService _tokenService;
     private readonly ILogger<AuditController> _logger;
     private readonly IMongoAuditRepository _mongoRepository;
-    
+
     public AuditController(
         IAuditService auditService,
         ITokenService tokenService,
@@ -24,7 +24,8 @@ public class AuditController : ControllerBase
     {
         _auditService = auditService;
         _tokenService = tokenService;
-        _logger       = logger;
+        _mongoRepository = mongoRepository;
+        _logger = logger;
     }
 
     // ── GET /audit/logs ───────────────────────────────────────
@@ -38,18 +39,18 @@ public class AuditController : ControllerBase
     // what questions advisors are asking the AI system.
     [HttpGet("logs")]
     [Authorize(Policy = "ComplianceOnly")]
-    public IActionResult GetRecentLogs([FromQuery] int count = 50)
+    public async Task<IActionResult> GetRecentLogs([FromQuery] int count = 50)
     {
-    var profile = _tokenService.ExtractProfile(HttpContext);
-    var logs    = await _mongoRepository.GetRecentAsync(count);
+        var profile = _tokenService.ExtractProfile(HttpContext);
+        var logs = await _mongoRepository.GetRecentAsync(count);
 
-    return Ok(new
-    {
-        total       = logs.Count,
-        accessed_by = profile?.UserId,
-        accessed_at = DateTime.UtcNow,
-        logs
-    });
+        return Ok(new
+        {
+            total = logs.Count,
+            accessed_by = profile?.UserId,
+            accessed_at = DateTime.UtcNow,
+            logs
+        });
     }
 
     // ── GET /audit/logs/{userId} ──────────────────────────────
@@ -58,64 +59,38 @@ public class AuditController : ControllerBase
     // Advisors can ONLY view their own logs.
     [HttpGet("logs/{userId}")]
     [Authorize] // Any authenticated user — but logic checks ownership
-    public IActionResult GetUserLogs(string userId)
+    public async Task<IActionResult> GetUserLogs(string userId)
     {
-   var profile      = _tokenService.ExtractProfile(HttpContext);
-    if (profile == null) return Unauthorized();
+        var profile = _tokenService.ExtractProfile(HttpContext);
+        if (profile == null) return Unauthorized();
 
-    var isPrivileged = profile.Role is "Compliance" or "Admin";
-    if (!isPrivileged && profile.UserId != userId)
-        return Forbid();
+        var isPrivileged = profile.Role is "Compliance" or "Admin";
+        if (!isPrivileged && profile.UserId != userId)
+            return Forbid();
 
-    var logs = await _mongoRepository.GetByUserAsync(userId);
-    return Ok(new { user_id = userId, total = logs.Count, logs });
+        var logs = await _mongoRepository.GetByUserAsync(userId);
+        return Ok(new { user_id = userId, total = logs.Count, logs });
     }
 
-    [HttpGet("request/{requestId}")]
-[Authorize(Policy = "ComplianceOnly")]
-public async Task<IActionResult> GetRequest(string requestId)
-{
+    // ── GET /audit/request/{requestId} ────────────────────────
     // Returns BOTH the request event AND response event
     // Shows the full Q&A pair in one call
-    var events = await _mongoRepository.GetByRequestIdAsync(requestId);
-    return Ok(new { request_id = requestId, events });
-}
-
-[HttpGet("stats")]
-[Authorize(Policy = "ComplianceOnly")]
-public async Task<IActionResult> GetStats()
-{
-    var stats = await _mongoRepository.GetStatsAsync();
-    return Ok(stats);
-}
+    [HttpGet("request/{requestId}")]
+    [Authorize(Policy = "ComplianceOnly")]
+    public async Task<IActionResult> GetRequest(string requestId)
+    {
+        var events = await _mongoRepository.GetByRequestIdAsync(requestId);
+        return Ok(new { request_id = requestId, events });
+    }
 
     // ── GET /audit/stats ──────────────────────────────────────
-    // Summary statistics — Compliance dashboard data
+    // Summary statistics — Compliance dashboard data.
+    // Uses the MongoDB-backed repository (post Day-5 migration).
     [HttpGet("stats")]
     [Authorize(Policy = "ComplianceOnly")]
-    public IActionResult GetStats()
+    public async Task<IActionResult> GetStats()
     {
-        var logs = _auditService.GetRecentLogs(1000);
-
-        var stats = new
-        {
-            total_queries  = logs.Count,
-            unique_advisors = logs.Select(l => l.UserId).Distinct().Count(),
-            avg_duration_ms = logs.Any()
-                ? (long)logs.Average(l => l.DurationMs) : 0,
-            rejected_count = logs.Count(l => l.Status.StartsWith("rejected")),
-            top_sources    = logs
-                .SelectMany(l => l.Sources)
-                .GroupBy(s => s)
-                .OrderByDescending(g => g.Count())
-                .Take(5)
-                .Select(g => new { source = g.Key, count = g.Count() }),
-            by_department  = logs
-                .GroupBy(l => l.Department)
-                .Select(g => new { dept = g.Key, count = g.Count() })
-                .OrderByDescending(x => x.count)
-        };
-
+        var stats = await _mongoRepository.GetStatsAsync();
         return Ok(stats);
     }
 }

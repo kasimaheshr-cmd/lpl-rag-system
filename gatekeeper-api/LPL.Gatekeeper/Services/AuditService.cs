@@ -1,3 +1,5 @@
+using LPL.Gatekeeper.Models;
+
 namespace LPL.Gatekeeper.Services;
 
 // ─── Interface ────────────────────────────────────────────────
